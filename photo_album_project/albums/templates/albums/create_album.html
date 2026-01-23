@@ -1,0 +1,130 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">Создать новый альбом</h4>
+                </div>
+                <div class="card-body">
+                    <div id="message" class="alert d-none"></div>
+                    
+                    <form id="create-album-form">
+                        <div class="mb-3">
+                            <label class="form-label">Название альбома</label>
+                            <input type="text" class="form-control" name="title" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Описание (необязательно)</label>
+                            <textarea class="form-control" name="description" rows="3"></textarea>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Шаблон оформления</label>
+                            <select class="form-select" name="template_id" id="template-select">
+                                <option value="">Без шаблона</option>
+                                <!-- Заполнится через JavaScript -->
+                            </select>
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-plus-circle me-2"></i>Создать альбом
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary" onclick="goBack()">
+                                Отмена
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        loadTemplates();
+        
+        document.getElementById('create-album-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            createAlbum();
+        });
+    });
+    
+    function loadTemplates() {
+        fetch(`${API_BASE}/templates/`)
+            .then(response => response.json())
+            .then(data => {
+                const select = document.getElementById('template-select');
+                const templates = data.results || data;
+                
+                templates.forEach(template => {
+                    const option = document.createElement('option');
+                    option.value = template.id;
+                    option.textContent = template.name + (template.is_premium ? ' (премиум)' : '');
+                    select.appendChild(option);
+                });
+            })
+            .catch(error => {
+                console.error('Ошибка загрузки шаблонов:', error);
+            });
+    }
+    
+    function createAlbum() {
+        const form = document.getElementById('create-album-form');
+        const formData = new FormData(form);
+        
+        const albumData = {
+            title: formData.get('title'),
+            description: formData.get('description') || '',
+        };
+        
+        const templateId = formData.get('template_id');
+        if (templateId) {
+            albumData.template_id = parseInt(templateId);
+        }
+        
+        const messageEl = document.getElementById('message');
+        
+        fetch(`${API_BASE}/albums/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            credentials: 'include',
+            body: JSON.stringify(albumData)
+        })
+        .then(response => {
+            if (response.ok) {
+                return response.json();
+            }
+            throw new Error(`Ошибка ${response.status}`);
+        })
+        .then(data => {
+            messageEl.className = 'alert alert-success';
+            messageEl.textContent = 'Альбом успешно создан!';
+            messageEl.classList.remove('d-none');
+            
+            setTimeout(() => {
+                window.location.href = '/';  // Возвращаемся на главную
+            }, 1500);
+        })
+        .catch(error => {
+            messageEl.className = 'alert alert-danger';
+            messageEl.textContent = 'Ошибка создания альбома: ' + error.message;
+            messageEl.classList.remove('d-none');
+        });
+    }
+    
+    function goBack() {
+        window.location.href = '/';
+    }
+</script>
+{% endblock %}

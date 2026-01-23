@@ -1,0 +1,248 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1 class="mb-0">Мои альбомы</h1>
+        <p class="text-muted">Создавайте и управляйте вашими фотоальбомами</p>
+    </div>
+    <div class="col-auto">
+        <button class="btn btn-primary" onclick="createAlbum()">
+            <i class="bi bi-plus-circle me-2"></i>Создать альбом
+        </button>
+    </div>
+</div>
+
+<div id="albums-container">
+    <div class="text-center">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Загрузка...</span>
+        </div>
+        <p class="mt-2">Загрузка альбомов...</p>
+    </div>
+</div>
+
+<template id="empty-template">
+    <div class="empty-state">
+        <i class="bi bi-journal-x" style="font-size: 3rem;"></i>
+        <h4 class="mt-3">У вас пока нет альбомов</h4>
+        <p class="text-muted">Создайте первый альбом для ваших фотографий</p>
+        <button class="btn btn-primary" onclick="createAlbum()">
+            <i class="bi bi-plus-circle me-2"></i>Создать альбом
+        </button>
+    </div>
+</template>
+
+<template id="album-template">
+    <div class="col-md-4 col-lg-3 mb-4">
+        <div class="card album-card h-100" onclick="viewAlbum({id})">
+            <div class="card-body text-center">
+                <i class="bi bi-journal-album" style="font-size: 3rem; color: #6c757d;"></i>
+                <h5 class="card-title mt-3">{title}</h5>
+                <p class="card-text text-muted small">{photo_count} фото</p>
+                <small class="text-muted">Создан: {created_date}</small>
+            </div>
+        </div>
+    </div>
+</template>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        loadAlbums();
+        
+        document.getElementById('login-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            login({
+                username: formData.get('username'),
+                password: formData.get('password')
+            });
+        });
+        
+        document.getElementById('register-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            register({
+                username: formData.get('username'),
+                email: formData.get('email'),
+                password: formData.get('password'),
+                password2: formData.get('password2')
+            });
+        });
+    });
+    
+    async function loadAlbums() {
+    const container = document.getElementById('albums-container');
+    
+    try {
+        console.log('Загружаем альбомы...');
+        
+        const response = await fetch(`${API_BASE}/albums/my/`, {
+            credentials: 'include'
+        });
+        
+        console.log('Ответ:', response.status);
+        
+        if (!response.ok) {
+            throw new Error(`Ошибка ${response.status}`);
+        }
+        
+        const data = await response.json();
+        console.log('Данные с сервера:', data);
+        
+        let albums = [];
+        if (Array.isArray(data)) {
+            albums = data; 
+        } else if (data && data.results && Array.isArray(data.results)) {
+            albums = data.results; 
+        } else if (data && Array.isArray(data)) {
+            albums = data; 
+        }
+        
+        console.log('Найдено альбомов:', albums.length);
+        
+        if (albums.length === 0) {
+            container.innerHTML = document.getElementById('empty-template').innerHTML;
+            return;
+        }
+        
+        let html = '<div class="row">';
+        albums.forEach(album => {
+    // Получаем последнюю фото из альбома
+    let coverImage = '';
+    let lastPhoto = null;
+    
+    if (album.photos && album.photos.length > 0) {
+        // Находим последнюю добавленную фото (по added_at или order)
+        lastPhoto = album.photos.reduce((latest, current) => {
+            return new Date(current.added_at) > new Date(latest.added_at) ? current : latest;
+        });
+        
+        if (lastPhoto && lastPhoto.photo && lastPhoto.photo.image) {
+            coverImage = `<img src="${lastPhoto.photo.image}" 
+                               class="card-img-top" 
+                               style="height: 180px; object-fit: cover;"
+                               alt="${lastPhoto.photo.title}">`;
+        }
+    }
+    
+    let albumHtml = `
+        <div class="col-md-4 col-lg-3 mb-4">
+            <div class="card album-card h-100" onclick="viewAlbum(${album.id})">
+                ${coverImage || `
+                    <div class="card-img-top d-flex align-items-center justify-content-center" 
+                         style="height: 180px; background-color: #f8f9fa;">
+                        <i class="bi bi-journal-album" style="font-size: 3rem; color: #6c757d;"></i>
+                    </div>
+                `}
+                <div class="card-body">
+                    <h5 class="card-title">${album.title || 'Без названия'}</h5>
+                    <p class="card-text text-muted small">
+                        ${album.photo_count || 0} фото
+                    </p>
+                    <small class="text-muted">
+                        Создан: ${new Date(album.created_at).toLocaleDateString('ru-RU')}
+                    </small>
+                </div>
+            </div>
+        </div>
+    `;
+    html += albumHtml;
+});
+        html += '</div>';
+        
+        container.innerHTML = html;
+        
+    } catch (error) {
+        console.error('Ошибка:', error);
+        container.innerHTML = `
+            <div class="alert alert-danger">
+                Ошибка загрузки альбомов: ${error.message}
+            </div>
+        `;
+    }
+}
+    
+    async function login(credentials) {
+        const response = await fetch(`${API_BASE}/login/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify(credentials),
+            credentials: 'include'
+        });
+        
+        const messageEl = document.getElementById('login-message');
+        
+        if (response.ok) {
+            messageEl.className = 'alert alert-success';
+            messageEl.textContent = 'Успешный вход!';
+            messageEl.classList.remove('d-none');
+            
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+        } else {
+            messageEl.className = 'alert alert-danger';
+            messageEl.textContent = 'Ошибка входа. Проверьте данные.';
+            messageEl.classList.remove('d-none');
+        }
+    }
+    
+    async function register(data) {
+        if (data.password !== data.password2) {
+            const messageEl = document.getElementById('register-message');
+            messageEl.className = 'alert alert-danger';
+            messageEl.textContent = 'Пароли не совпадают';
+            messageEl.classList.remove('d-none');
+            return;
+        }
+        
+        const response = await fetch(`${API_BASE}/register/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify({
+                username: data.username,
+                email: data.email,
+                password: data.password
+            })
+        });
+        
+        const messageEl = document.getElementById('register-message');
+        
+        if (response.ok) {
+            messageEl.className = 'alert alert-success';
+            messageEl.textContent = 'Регистрация успешна! Войдите в систему.';
+            messageEl.classList.remove('d-none');
+            
+            setTimeout(() => {
+                document.getElementById('registerModal').querySelector('.btn-close').click();
+                showLogin();
+            }, 1500);
+        } else {
+            messageEl.className = 'alert alert-danger';
+            messageEl.textContent = 'Ошибка регистрации. Возможно, пользователь уже существует.';
+            messageEl.classList.remove('d-none');
+        }
+    }
+    
+    function createAlbum() {
+        {% if user.is_authenticated %}
+        window.location.href = '/albums/create/';
+        {% else %}
+        showLogin();
+        {% endif %}
+    }
+    
+    function viewAlbum(albumId) {
+        window.location.href = `/albums/${albumId}/`;
+    }
+</script>
+{% endblock %}

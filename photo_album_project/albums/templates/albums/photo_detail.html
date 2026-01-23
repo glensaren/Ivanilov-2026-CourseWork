@@ -1,0 +1,178 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <!-- Заголовок -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 id="photo-title">{{ photo.title }}</h1>
+            <p class="text-muted" id="photo-description">{{ photo.description }}</p>
+        </div>
+        <div>
+            <button class="btn btn-outline-primary" onclick="editPhoto()">
+                <i class="bi bi-pencil"></i> Редактировать
+            </button>
+            <button class="btn btn-outline-secondary ms-2" onclick="goBack()">
+                <i class="bi bi-arrow-left"></i> Назад
+            </button>
+        </div>
+    </div>
+    
+    <!-- Изображение -->
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card mb-4">
+                {% if photo.image %}
+                <img src="{{ photo.image.url }}" class="card-img-top" 
+                     style="max-height: 500px; object-fit: contain;">
+                {% else %}
+                <div class="card-body text-center py-5">
+                    <i class="bi bi-image" style="font-size: 5rem; color: #dee2e6;"></i>
+                    <p class="mt-3">Нет изображения</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Информация -->
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Информация</h5>
+                </div>
+                <div class="card-body">
+                    <p><strong>Владелец:</strong> {{ photo.user.username }}</p>
+                    <p><strong>Загружено:</strong> {{ photo.uploaded_at|date:"d.m.Y H:i" }}</p>
+                    <p><strong>В альбомах:</strong> 
+                        {% for album in photo.albums.all %}
+                        <a href="/albums/{{ album.id }}/" class="badge bg-primary me-1">{{ album.title }}</a>
+                        {% empty %}
+                        <span class="text-muted">Не в альбомах</span>
+                        {% endfor %}
+                    </p>
+                    
+                    <div class="mt-3">
+                        <strong>Теги:</strong>
+                        <div id="tags-container" class="d-flex flex-wrap gap-2 mt-2">
+                            {% for tag in photo.tags.all %}
+                            <span class="badge" style="background-color: {{ tag.color }}">{{ tag.name }}</span>
+                            {% empty %}
+                            <span class="text-muted">Нет тегов</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно редактирования -->
+<div class="modal fade" id="editPhotoModal">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Редактировать фото</h5>
+                <button class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="edit-photo-form">
+                    <div class="mb-3">
+                        <label class="form-label">Название</label>
+                        <input type="text" class="form-control" id="edit-photo-title" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Описание</label>
+                        <textarea class="form-control" id="edit-photo-description" rows="3"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Теги</label>
+                        <div id="edit-tags-container" class="d-flex flex-wrap gap-2 mb-2"></div>
+                        
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">Сохранить</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const photoId = {{ photo.id }};
+    let selectedTags = [{% for tag in photo.tags.all %}{{ tag.id }}{% if not forloop.last %}, {% endif %}{% endfor %}];
+    
+    function goBack() {
+        window.history.back();
+    }
+    
+    function editPhoto() {
+        document.getElementById('edit-photo-title').value = document.getElementById('photo-title').textContent;
+        document.getElementById('edit-photo-description').value = document.getElementById('photo-description').textContent;
+        
+        loadTagsForEdit();
+        
+        const modal = new bootstrap.Modal(document.getElementById('editPhotoModal'));
+        modal.show();
+    }
+    
+    function loadTagsForEdit() {
+        fetch(`${API_BASE}/tags/`)
+            .then(r => r.json())
+            .then(data => {
+                const container = document.getElementById('edit-tags-container');
+                container.innerHTML = '';
+                
+                const tags = data.results || data || [];
+                tags.forEach(tag => {
+                    const btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = 'btn btn-sm ' + 
+                        (selectedTags.includes(tag.id) ? 'btn-primary' : 'btn-outline-secondary');
+                    btn.textContent = tag.name;
+                    btn.onclick = () => toggleTag(tag.id, btn);
+                    container.appendChild(btn);
+                });
+            });
+    }
+    
+    function toggleTag(tagId, element) {
+        const index = selectedTags.indexOf(tagId);
+        if (index === -1) {
+            selectedTags.push(tagId);
+            element.className = 'btn btn-sm btn-primary';
+        } else {
+            selectedTags.splice(index, 1);
+            element.className = 'btn btn-sm btn-outline-secondary';
+        }
+    }
+    
+    document.getElementById('edit-photo-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const data = {
+            title: document.getElementById('edit-photo-title').value,
+            description: document.getElementById('edit-photo-description').value,
+            tag_ids: selectedTags
+        };
+        
+        fetch(`${API_BASE}/photos/${photoId}/`, {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            credentials: 'include',
+            body: JSON.stringify(data)
+        })
+        .then(r => r.json())
+        .then(data => {
+            location.reload(); // Перезагружаем страницу
+        })
+        .catch(error => {
+            alert('Ошибка: ' + error.message);
+        });
+    });
+</script>
+{% endblock %}
