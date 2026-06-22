@@ -1,4 +1,6 @@
 # 1. Импорты
+from django_filters.rest_framework import DjangoFilterBackend
+
 from django.contrib.auth import authenticate, login as auth_login, logout as auth_logout
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
@@ -6,6 +8,8 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.shortcuts import render, redirect
 import json
+
+from django.db.models import Q, Count
 
 from rest_framework import viewsets, filters, status, permissions
 from rest_framework.decorators import action
@@ -44,7 +48,7 @@ class PhotoViewSet(viewsets.ModelViewSet):
     ordering_fields = ['uploaded_at', 'title']
 
     def get_queryset(self):
-        queryset = Photo.objects.all()
+        queryset = Photo.objects.select_related('user', 'album').prefetch_related('tags')
         
         tag_filter = self.request.query_params.get('tags')
         if tag_filter:
@@ -76,12 +80,28 @@ class PhotoViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
 class AlbumViewSet(viewsets.ModelViewSet):
-    queryset = Album.objects.all()
     serializer_class = AlbumSerializer
     pagination_class = StandardPagination
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filterset_fields = ['created_at', 'user__username']
+    search_fields = ['title', 'description']
+    ordering_fields = ['created_at', 'photo_count']
+
+    queryset = Album.objects.annotate(
+        photo_count=Count('albumphoto')
+    ).select_related('user', 'template').prefetch_related(
+        'albumphoto_set__photo',
+        'albumphoto_set__photo__tags'
+    )
+  
 
     def get_queryset(self):
-        queryset = Album.objects.all()
+        queryset = Album.objects.annotate(
+            photo_count=Count('albumphoto')
+        ).select_related('user', 'template').prefetch_related(
+            'albumphoto_set__photo',
+            'albumphoto_set__photo__tags'
+        )
         
         user_filter = self.request.query_params.get('user')
         if user_filter:

@@ -11,6 +11,10 @@ class Tag(models.Model):
     def __str__(self):
         return self.name
 
+    class Meta:
+        verbose_name = "Тег"
+        verbose_name_plural = "Теги"
+
 class AlbumTemplate(models.Model):
     name = models.CharField(max_length=100)
     description = models.TextField(blank=True)
@@ -22,6 +26,10 @@ class AlbumTemplate(models.Model):
     
     def __str__(self):
         return self.name
+
+    class Meta:
+        verbose_name = "Шаблон альбома"
+        verbose_name_plural = "Шаблоны альбомов"
 
 class Photo(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='photos')
@@ -36,6 +44,10 @@ class Photo(models.Model):
     def __str__(self):
         return self.title
 
+    class Meta:
+        verbose_name = "Фотография"
+        verbose_name_plural = "Фотографии"
+
 class Album(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='albums')
     title = models.CharField(max_length=200)
@@ -48,6 +60,10 @@ class Album(models.Model):
     
     def __str__(self):
         return self.title
+    
+    class Meta:
+        verbose_name = "Альбом"
+        verbose_name_plural = "Альбомы"
 
 class AlbumPhoto(models.Model):
     album = models.ForeignKey(Album, on_delete=models.CASCADE)
@@ -58,3 +74,7 @@ class AlbumPhoto(models.Model):
     
     class Meta:
         ordering = ['order']
+
+    class Meta:
+        verbose_name = "Фотография в альбоме"
+        verbose_name_plural = "Фотографии в альбомах"

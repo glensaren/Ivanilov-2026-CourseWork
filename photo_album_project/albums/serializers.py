@@ -34,16 +34,11 @@ class PhotoSerializer(serializers.ModelSerializer):
 
 class AlbumPhotoSerializer(serializers.ModelSerializer):
     photo = PhotoSerializer(read_only=True)
-    photo_id = serializers.PrimaryKeyRelatedField(
-        queryset=Photo.objects.all(),
-        write_only=True,
-        source='photo'
-    )
     
     class Meta:
         model = AlbumPhoto
-        fields = ['id', 'album', 'photo', 'photo_id', 'order', 'added_at']
-        read_only_fields = ['album', 'added_at']
+        fields = ['id', 'photo', 'order', 'added_at']
+        read_only_fields = ['added_at']
 
 class AlbumSerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True)
@@ -55,10 +50,20 @@ class AlbumSerializer(serializers.ModelSerializer):
         required=False,
         allow_null=True
     )
+
     photos = AlbumPhotoSerializer(many=True, read_only=True, source='albumphoto_set')
-    photo_count = serializers.IntegerField(source='photos.count', read_only=True)
-    
+    photo_count = serializers.IntegerField(read_only=True)
+    is_owner = serializers.SerializerMethodField()
+
+
+    def get_is_owner(self, obj):
+        request = self.context.get('request')
+        if request and request.user.is_authenticated:
+            return request.user == obj.user
+        return False
+
     class Meta:
         model = Album
-        fields = ['id', 'user', 'title', 'description', 'template', 'template_id', 'photos', 'photo_count', 'created_at', 'updated_at']
+        fields = ['id', 'user', 'title', 'description', 'template', 'template_id', 
+                  'photos', 'photo_count', 'is_owner', 'created_at', 'updated_at']
         read_only_fields = ['user', 'created_at', 'updated_at']

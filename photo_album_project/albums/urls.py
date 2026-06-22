@@ -20,10 +20,10 @@ urlpatterns = [
 
     # path('', include(router.urls)),
 
-    path('api/', include(router.urls)),
-    path('api/login/', views.api_login, name='api-login'),
-    path('api/register/', views.api_register, name='api-register'),
-    path('api/logout/', views.api_logout, name='api-logout'),
+    path('', include(router.urls)),
+    path('login/', views.api_login, name='api-login'),
+    path('register/', views.api_register, name='api-register'),
+    path('logout/', views.api_logout, name='api-logout'),
     
     # 2. HTML страницы (после /api/)
     path('', views.home_page, name='home'),
