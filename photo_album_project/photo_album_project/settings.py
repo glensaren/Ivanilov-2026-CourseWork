@@ -13,6 +13,8 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 from pathlib import Path
 import os
 
+import sentry_sdk
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -43,9 +45,11 @@ INSTALLED_APPS = [
     'import_export',
     'simple_history',
     'django_filters',
+    'silk',
 ]
 
 MIDDLEWARE = [
+    'silk.middleware.SilkyMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -163,3 +167,9 @@ EMAIL_HOST_USER = ''
 EMAIL_HOST_PASSWORD = ''
 EMAIL_USE_TLS = False
 DEFAULT_FROM_EMAIL = 'noreply@photoalbum.local'
+
+sentry_sdk.init(
+    dsn="https://283648cb9c7e2bf2974eb819aa3d7b4f@o4511615431147520.ingest.de.sentry.io/4511615440519248",
+    send_default_pii=True,
+    traces_sample_rate=1.0,
+)
