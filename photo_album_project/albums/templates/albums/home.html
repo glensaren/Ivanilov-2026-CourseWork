@@ -6,9 +6,12 @@
         <h1 class="mb-0">Мои альбомы</h1>
         <p class="text-muted">Создавайте и управляйте вашими фотоальбомами</p>
     </div>
-    <div class="col-auto">
+    <div class="col-auto d-flex gap-2">
         <button class="btn btn-primary" onclick="createAlbum()">
             <i class="bi bi-plus-circle me-2"></i>Создать альбом
+        </button>
+        <button class="btn btn-outline-secondary" onclick="showReviewModal()">
+            <i class="bi bi-chat-dots me-2"></i>Оставить отзыв
         </button>
     </div>
 </div>
@@ -45,13 +48,53 @@
         </div>
     </div>
 </template>
+
+<!-- Модальное окно отзыва -->
+<div class="modal fade" id="reviewModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-chat-dots me-2"></i>Оставить отзыв
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="review-message" class="alert d-none"></div>
+                <div class="mb-3">
+                    <label class="form-label">Email для обратной связи</label>
+                    <input type="email" class="form-control" id="review-email" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Оценка</label>
+                    <div id="star-rating" class="d-flex gap-2 fs-4">
+                        <i class="bi bi-star star-btn" data-value="1" style="cursor:pointer; color: #ffc107;"></i>
+                        <i class="bi bi-star star-btn" data-value="2" style="cursor:pointer; color: #ffc107;"></i>
+                        <i class="bi bi-star star-btn" data-value="3" style="cursor:pointer; color: #ffc107;"></i>
+                        <i class="bi bi-star star-btn" data-value="4" style="cursor:pointer; color: #ffc107;"></i>
+                        <i class="bi bi-star star-btn" data-value="5" style="cursor:pointer; color: #ffc107;"></i>
+                    </div>
+                    <input type="hidden" id="review-rating" value="0">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Текст отзыва</label>
+                    <textarea class="form-control" id="review-text" rows="4"
+                              placeholder="Минимум 10 символов..."></textarea>
+                </div>
+                <button class="btn btn-primary w-100" onclick="submitReview()">
+                    Отправить отзыв
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block scripts %}
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         loadAlbums();
-        
+
         document.getElementById('login-form').addEventListener('submit', function(e) {
             e.preventDefault();
             const formData = new FormData(this);
@@ -60,7 +103,7 @@
                 password: formData.get('password')
             });
         });
-        
+
         document.getElementById('register-form').addEventListener('submit', function(e) {
             e.preventDefault();
             const formData = new FormData(this);
@@ -71,100 +114,134 @@
                 password2: formData.get('password2')
             });
         });
-    });
-    
-    async function loadAlbums() {
-    const container = document.getElementById('albums-container');
-    
-    try {
-        console.log('Загружаем альбомы...');
-        
-        const response = await fetch(`${API_BASE}/albums/my/`, {
-            credentials: 'include'
+
+        // Звёздный рейтинг
+        document.querySelectorAll('.star-btn').forEach(star => {
+            star.addEventListener('click', function() {
+                const value = parseInt(this.dataset.value);
+                document.getElementById('review-rating').value = value;
+                document.querySelectorAll('.star-btn').forEach((s, i) => {
+                    s.className = i < value ? 'bi bi-star-fill star-btn' : 'bi bi-star star-btn';
+                });
+            });
         });
-        
-        console.log('Ответ:', response.status);
-        
-        if (!response.ok) {
-            throw new Error(`Ошибка ${response.status}`);
-        }
-        
-        const data = await response.json();
-        console.log('Данные с сервера:', data);
-        
-        let albums = [];
-        if (Array.isArray(data)) {
-            albums = data; 
-        } else if (data && data.results && Array.isArray(data.results)) {
-            albums = data.results; 
-        } else if (data && Array.isArray(data)) {
-            albums = data; 
-        }
-        
-        console.log('Найдено альбомов:', albums.length);
-        
-        if (albums.length === 0) {
-            container.innerHTML = document.getElementById('empty-template').innerHTML;
+    });
+
+    function showReviewModal() {
+        {% if user.is_authenticated %}
+        const modal = new bootstrap.Modal(document.getElementById('reviewModal'));
+        modal.show();
+        {% else %}
+        showLogin();
+        {% endif %}
+    }
+
+    async function submitReview() {
+        const email = document.getElementById('review-email').value;
+        const text = document.getElementById('review-text').value;
+        const rating = parseInt(document.getElementById('review-rating').value);
+        const messageEl = document.getElementById('review-message');
+
+        if (!rating) {
+            messageEl.className = 'alert alert-danger';
+            messageEl.textContent = 'Выберите оценку';
+            messageEl.classList.remove('d-none');
             return;
         }
-        
-        let html = '<div class="row">';
-        albums.forEach(album => {
-    // Получаем последнюю фото из альбома
-    let coverImage = '';
-    let lastPhoto = null;
-    
-    if (album.photos && album.photos.length > 0) {
-        // Находим последнюю добавленную фото (по added_at или order)
-        lastPhoto = album.photos.reduce((latest, current) => {
-            return new Date(current.added_at) > new Date(latest.added_at) ? current : latest;
+
+        const response = await fetch(`${API_BASE}/reviews/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            credentials: 'include',
+            body: JSON.stringify({ email, text, rating })
         });
-        
-        if (lastPhoto && lastPhoto.photo && lastPhoto.photo.image) {
-            coverImage = `<img src="${lastPhoto.photo.image}" 
-                               class="card-img-top" 
-                               style="height: 180px; object-fit: cover;"
-                               alt="${lastPhoto.photo.title}">`;
+
+        if (response.ok) {
+            messageEl.className = 'alert alert-success';
+            messageEl.textContent = 'Спасибо за отзыв! Он появится после модерации.';
+            messageEl.classList.remove('d-none');
+            document.getElementById('review-email').value = '';
+            document.getElementById('review-text').value = '';
+            document.getElementById('review-rating').value = '0';
+            document.querySelectorAll('.star-btn').forEach(s => {
+                s.className = 'bi bi-star star-btn';
+            });
+        } else {
+            const data = await response.json();
+            let errorText = 'Ошибка отправки отзыва.';
+            if (data.text) errorText = data.text[0];
+            else if (data.rating) errorText = data.rating[0];
+            else if (data.email) errorText = data.email[0];
+            messageEl.className = 'alert alert-danger';
+            messageEl.textContent = errorText;
+            messageEl.classList.remove('d-none');
         }
     }
-    
-    let albumHtml = `
-        <div class="col-md-4 col-lg-3 mb-4">
-            <div class="card album-card h-100" onclick="viewAlbum(${album.id})">
-                ${coverImage || `
-                    <div class="card-img-top d-flex align-items-center justify-content-center" 
-                         style="height: 180px; background-color: #f8f9fa;">
-                        <i class="bi bi-journal-album" style="font-size: 3rem; color: #6c757d;"></i>
-                    </div>
-                `}
-                <div class="card-body">
-                    <h5 class="card-title">${album.title || 'Без названия'}</h5>
-                    <p class="card-text text-muted small">
-                        ${album.photo_count || 0} фото
-                    </p>
-                    <small class="text-muted">
-                        Создан: ${new Date(album.created_at).toLocaleDateString('ru-RU')}
-                    </small>
-                </div>
-            </div>
-        </div>
-    `;
-    html += albumHtml;
-});
-        html += '</div>';
+
+    async function loadAlbums() {
+        const container = document.getElementById('albums-container');
         
-        container.innerHTML = html;
-        
-    } catch (error) {
-        console.error('Ошибка:', error);
-        container.innerHTML = `
-            <div class="alert alert-danger">
-                Ошибка загрузки альбомов: ${error.message}
-            </div>
-        `;
+        {% if not user.is_authenticated %}
+        container.innerHTML = document.getElementById('empty-template').innerHTML;
+        return;
+        {% endif %}
+
+        try {
+            const response = await fetch(`${API_BASE}/albums/my/`, {
+                credentials: 'include'
+            });
+            if (!response.ok) throw new Error(`Ошибка ${response.status}`);
+            const data = await response.json();
+            let albums = Array.isArray(data) ? data : (data.results || []);
+
+            if (albums.length === 0) {
+                container.innerHTML = document.getElementById('empty-template').innerHTML;
+                return;
+            }
+
+            let html = '<div class="row">';
+            albums.forEach(album => {
+                let coverImage = '';
+                if (album.photos && album.photos.length > 0) {
+                    const lastPhoto = album.photos.reduce((latest, current) =>
+                        new Date(current.added_at) > new Date(latest.added_at) ? current : latest
+                    );
+                    if (lastPhoto && lastPhoto.photo && lastPhoto.photo.image) {
+                        coverImage = `<img src="${lastPhoto.photo.image}"
+                                        class="card-img-top"
+                                        style="height: 180px; object-fit: cover;"
+                                        alt="${lastPhoto.photo.title}">`;
+                    }
+                }
+                html += `
+                    <div class="col-md-4 col-lg-3 mb-4">
+                        <div class="card album-card h-100" onclick="viewAlbum(${album.id})">
+                            ${coverImage || `
+                                <div class="card-img-top d-flex align-items-center justify-content-center"
+                                    style="height: 180px; background-color: #f8f9fa;">
+                                    <i class="bi bi-journal-album" style="font-size: 3rem; color: #6c757d;"></i>
+                                </div>
+                            `}
+                            <div class="card-body">
+                                <h5 class="card-title">${album.title || 'Без названия'}</h5>
+                                <p class="card-text text-muted small">${album.photo_count || 0} фото</p>
+                                <small class="text-muted">
+                                    Создан: ${new Date(album.created_at).toLocaleDateString('ru-RU')}
+                                </small>
+                            </div>
+                        </div>
+                    </div>`;
+            });
+            html += '</div>';
+            container.innerHTML = html;
+        } catch (error) {
+            container.innerHTML = `<div class="alert alert-danger">Ошибка загрузки: ${error.message}</div>`;
+        }
     }
-}
-    
+
     async function login(credentials) {
         const response = await fetch(`${API_BASE}/login/`, {
             method: 'POST',
@@ -175,24 +252,19 @@
             body: JSON.stringify(credentials),
             credentials: 'include'
         });
-        
         const messageEl = document.getElementById('login-message');
-        
         if (response.ok) {
             messageEl.className = 'alert alert-success';
             messageEl.textContent = 'Успешный вход!';
             messageEl.classList.remove('d-none');
-            
-            setTimeout(() => {
-                window.location.reload();
-            }, 1000);
+            setTimeout(() => window.location.reload(), 1000);
         } else {
             messageEl.className = 'alert alert-danger';
             messageEl.textContent = 'Ошибка входа. Проверьте данные.';
             messageEl.classList.remove('d-none');
         }
     }
-    
+
     async function register(data) {
         if (data.password !== data.password2) {
             const messageEl = document.getElementById('register-message');
@@ -201,7 +273,6 @@
             messageEl.classList.remove('d-none');
             return;
         }
-        
         const response = await fetch(`${API_BASE}/register/`, {
             method: 'POST',
             headers: {
@@ -214,14 +285,11 @@
                 password: data.password
             })
         });
-        
         const messageEl = document.getElementById('register-message');
-        
         if (response.ok) {
             messageEl.className = 'alert alert-success';
             messageEl.textContent = 'Регистрация успешна! Войдите в систему.';
             messageEl.classList.remove('d-none');
-            
             setTimeout(() => {
                 document.getElementById('registerModal').querySelector('.btn-close').click();
                 showLogin();
@@ -232,7 +300,7 @@
             messageEl.classList.remove('d-none');
         }
     }
-    
+
     function createAlbum() {
         {% if user.is_authenticated %}
         window.location.href = '/albums/create/';
@@ -240,9 +308,9 @@
         showLogin();
         {% endif %}
     }
-    
+
     function viewAlbum(albumId) {
         window.location.href = `/albums/${albumId}/`;
     }
 </script>
-{% endblock %}
+{% endblock %}  

@@ -1,3 +1,5 @@
+from django.core.mail import send_mail
+
 from .filters import PhotoFilter, AlbumFilter
 from django_filters.rest_framework import DjangoFilterBackend
 
@@ -271,12 +273,19 @@ class ReviewViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer) -> None:
         """
-        Сохраняет отзыв с привязкой к текущему пользователю.
+        Сохраняет отзыв и отправляет уведомление администратору.
 
         Args:
             serializer: валидированный сериализатор отзыва
         """
-        serializer.save(user=self.request.user)
+        review = serializer.save(user=self.request.user)
+        send_mail(
+            subject=f'Новый отзыв от {review.user.username}',
+            message=f'Оценка: {review.rating}/5\n\nТекст: {review.text}\n\nEmail для связи: {review.email}',
+            from_email='noreply@photoalbum.local',
+            recipient_list=['admin@photoalbum.local'],
+            fail_silently=True,
+    )
 
     @action(detail=True, methods=['post'], permission_classes=[permissions.IsAuthenticated])
     def publish(self, request: Request, pk: int = None) -> Response:
