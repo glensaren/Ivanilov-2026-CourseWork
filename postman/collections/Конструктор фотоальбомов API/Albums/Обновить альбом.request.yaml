@@ -1,0 +1,9 @@
+$kind: http-request
+url: "{{base_url}}/albums/1/"
+method: PATCH
+headers:
+  Content-Type: application/json
+body:
+  type: text
+  content: '{"title": "Обновлённое название"}'
+order: 5000

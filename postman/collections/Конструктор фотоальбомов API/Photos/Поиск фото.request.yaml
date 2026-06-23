@@ -1,0 +1,6 @@
+$kind: http-request
+url: ?q=море
+method: GET
+queryParams:
+  q: море
+order: 5000

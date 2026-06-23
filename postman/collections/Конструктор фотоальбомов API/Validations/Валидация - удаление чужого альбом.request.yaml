@@ -1,0 +1,5 @@
+$kind: http-request
+name: Валидация - удаление чужого альбома (403)
+url: "{{base_url}}/albums/1/"
+method: DELETE
+order: 4000

@@ -1,0 +1,4 @@
+$kind: http-request
+url: "{{base_url}}/albums/1/"
+method: DELETE
+order: 6000

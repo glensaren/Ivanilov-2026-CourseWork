@@ -1,0 +1,6 @@
+$kind: http-request
+url: ?username=testuser
+method: GET
+queryParams:
+  username: testuser
+order: 8000

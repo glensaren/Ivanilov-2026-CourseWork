@@ -1,0 +1,9 @@
+$kind: http-request
+url: "{{base_url}}/templates/"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: text
+  content: '{"name": "Летний", "description": "Яркий летний шаблон", "is_premium": false, "style_config": {}}'
+order: 2000

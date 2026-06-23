@@ -1,0 +1,6 @@
+$kind: http-request
+url: ?tags=природа
+method: GET
+queryParams:
+  tags: природа
+order: 6000

@@ -1,0 +1,9 @@
+$kind: http-request
+url: "{{base_url}}/albums/"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: text
+  content: '{"title": "Мой альбом"}'
+order: 2000

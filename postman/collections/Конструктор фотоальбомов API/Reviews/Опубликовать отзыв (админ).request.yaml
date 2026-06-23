@@ -1,0 +1,4 @@
+$kind: http-request
+url: "{{base_url}}/reviews/1/publish/"
+method: POST
+order: 3000

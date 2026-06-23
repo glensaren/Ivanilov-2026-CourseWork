@@ -1,0 +1,9 @@
+$kind: http-request
+url: "{{base_url}}/register/"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: text
+  content: '{"username": "testuser", "email": "test@test.com", "password": "testpass123"}'
+order: 1000

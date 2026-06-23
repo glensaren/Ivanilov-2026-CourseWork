@@ -1,0 +1,9 @@
+$kind: http-request
+url: "{{base_url}}/albums/1/add_photo/"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: text
+  content: '{"photo_id": 999}'
+order: 3000

@@ -1,0 +1,9 @@
+$kind: http-request
+url: "{{base_url}}/tags/1/"
+method: PATCH
+headers:
+  Content-Type: application/json
+body:
+  type: text
+  content: '{"color": "#2ecc71"}'
+order: 3000

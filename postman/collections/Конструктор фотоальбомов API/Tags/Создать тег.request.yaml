@@ -1,0 +1,9 @@
+$kind: http-request
+url: "{{base_url}}/tags/"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: text
+  content: '{"name": "природа", "color": "#27ae60"}'
+order: 2000

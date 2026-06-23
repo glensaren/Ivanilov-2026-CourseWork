@@ -1,0 +1,9 @@
+$kind: http-request
+url: "{{base_url}}/reviews/"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: text
+  content: '{"email": "user@test.com", "text": "Отличный сервис для фотоальбомов!", "rating": 5}'
+order: 2000

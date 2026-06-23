@@ -1,0 +1,9 @@
+$kind: http-request
+url: "{{base_url}}/templates/1/"
+method: PATCH
+headers:
+  Content-Type: application/json
+body:
+  type: text
+  content: '{"is_premium": true}'
+order: 3000

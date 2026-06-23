@@ -1,0 +1,20 @@
+$kind: http-request
+url: "{{base_url}}/photos/"
+method: POST
+body:
+  type: formdata
+  content:
+    - type: text
+      key: title
+      value: Тестовое фото
+    - type: text
+      key: description
+      value: Описание фото
+    - type: file
+      key: image
+      src:
+        - ""
+    - type: text
+      key: tag_ids
+      value: "1"
+order: 2000

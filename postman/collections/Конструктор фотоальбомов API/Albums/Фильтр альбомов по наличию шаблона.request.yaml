@@ -1,0 +1,6 @@
+$kind: http-request
+url: ?has_template=true
+method: GET
+queryParams:
+  has_template: "true"
+order: 9000

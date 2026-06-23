@@ -1,0 +1,9 @@
+$kind: http-request
+url: "{{base_url}}/reviews/"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: text
+  content: '{"email": "user@test.com", "text": "Тестовый отзыв для проверки валидации", "rating": 6}'
+order: 4000
