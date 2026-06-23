@@ -1,4 +1,5 @@
 from django.core.mail import send_mail
+from django.shortcuts import render, redirect
 
 from .filters import PhotoFilter, AlbumFilter
 from django_filters.rest_framework import DjangoFilterBackend
@@ -22,7 +23,7 @@ from rest_framework.request import Request
 from .models import Tag, AlbumTemplate, Photo, Album, AlbumPhoto, Review
 from .serializers import (
     TagSerializer, AlbumTemplateSerializer, PhotoSerializer,
-    AlbumSerializer, AlbumPhotoSerializer, ReviewSerializer
+    AlbumSerializer, AlbumPhotoSerializer, ReviewSerializer, UserSerializer
 )
 from .permissions import IsOwnerOrAdmin
 
@@ -51,6 +52,7 @@ class AlbumTemplateViewSet(viewsets.ModelViewSet):
     queryset = AlbumTemplate.objects.all()
     serializer_class = AlbumTemplateSerializer
     pagination_class = StandardPagination
+
 
 
 class PhotoViewSet(viewsets.ModelViewSet):
@@ -306,6 +308,41 @@ class ReviewViewSet(viewsets.ModelViewSet):
         review.save()
         return Response({'status': 'Отзыв опубликован'})
 
+class UserViewSet(viewsets.ModelViewSet):
+    """ViewSet для управления пользователями — только для администратора."""
+    serializer_class = UserSerializer
+    pagination_class = StandardPagination
+
+    def get_queryset(self) -> QuerySet:
+        """
+        Возвращает список пользователей — только для админа.
+
+        Returns:
+            QuerySet пользователей
+        """
+        if not self.request.user.is_authenticated or self.request.user.role != 'admin':
+            return User.objects.none()
+        return User.objects.all()
+
+    def get_permissions(self) -> list:
+        """Только админ может управлять пользователями."""
+        return [permissions.IsAuthenticated()]
+
+    def destroy(self, request, *args, **kwargs) -> Response:
+        """Запрещает удаление самого себя."""
+        instance = self.get_object()
+        if instance == request.user:
+            return Response(
+                {'error': 'Нельзя удалить самого себя'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        return super().destroy(request, *args, **kwargs)
+
+def admin_dashboard(request: HttpRequest) -> HttpResponse:
+    """Страница дашборда для администратора."""
+    if not request.user.is_authenticated or request.user.role != 'admin':
+        return redirect('/')
+    return render(request, 'albums/admin_dashboard.html')
 
 def home_page(request: HttpRequest) -> HttpResponse:
     """Главная страница приложения."""

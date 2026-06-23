@@ -12,4 +12,5 @@ urlpatterns = [
     path('albums/<int:album_id>/', views.album_detail_page, name='album-detail'),
     path('albums/create/', views.create_album_page, name='create-album-page'),
     path('photos/<int:photo_id>/', views.photo_detail_page, name='photo-detail'),
+    path('dashboard/', views.admin_dashboard, name='admin-dashboard'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

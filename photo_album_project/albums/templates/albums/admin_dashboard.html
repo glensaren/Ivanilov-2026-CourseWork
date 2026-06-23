@@ -1,0 +1,762 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1 class="mb-0">Панель администратора</h1>
+        <p class="text-muted">Управление системой и модерация контента</p>
+    </div>
+</div>
+
+<!-- Статистика -->
+<div class="row mb-4" id="stats-container">
+    <div class="col-md-3 mb-3">
+        <div class="card text-center border-primary">
+            <div class="card-body">
+                <i class="bi bi-people fs-1 text-primary"></i>
+                <h3 class="mt-2" id="stat-users">—</h3>
+                <p class="text-muted mb-0">Пользователей</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card text-center border-success">
+            <div class="card-body">
+                <i class="bi bi-journal-album fs-1 text-success"></i>
+                <h3 class="mt-2" id="stat-albums">—</h3>
+                <p class="text-muted mb-0">Альбомов</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card text-center border-info">
+            <div class="card-body">
+                <i class="bi bi-images fs-1 text-info"></i>
+                <h3 class="mt-2" id="stat-photos">—</h3>
+                <p class="text-muted mb-0">Фотографий</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card text-center border-warning">
+            <div class="card-body">
+                <i class="bi bi-chat-dots fs-1 text-warning"></i>
+                <h3 class="mt-2" id="stat-reviews">—</h3>
+                <p class="text-muted mb-0">Отзывов на модерации</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Отзывы на модерации -->
+<div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0"><i class="bi bi-clock-history me-2"></i>Отзывы на модерации</h5>
+    </div>
+    <div class="card-body">
+        <div id="reviews-container">
+            <div class="text-center py-3">
+                <div class="spinner-border text-primary" role="status"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Последние альбомы -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0"><i class="bi bi-journal-album me-2"></i>Последние альбомы</h5>
+    </div>
+    <div class="card-body">
+        <div id="albums-container">
+            <div class="text-center py-3">
+                <div class="spinner-border text-primary" role="status"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Управление тегами -->
+<div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0"><i class="bi bi-tags me-2"></i>Управление тегами</h5>
+        <button class="btn btn-primary btn-sm" onclick="showCreateTagModal()">
+            <i class="bi bi-plus-circle me-1"></i>Создать тег
+        </button>
+    </div>
+    <div class="card-body">
+        <div id="tags-container">
+            <div class="text-center py-3">
+                <div class="spinner-border text-primary" role="status"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модалка создания/редактирования тега -->
+<div class="modal fade" id="tagModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="tag-modal-title">Создать тег</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="tag-message" class="alert d-none"></div>
+                <input type="hidden" id="tag-id">
+                <div class="mb-3">
+                    <label class="form-label">Название</label>
+                    <input type="text" class="form-control" id="tag-name">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Цвет</label>
+                    <div class="d-flex gap-2 align-items-center">
+                        <input type="color" class="form-control form-control-color"
+                               id="tag-color-picker" value="#3498db"
+                               oninput="document.getElementById('tag-color-hex').value = this.value">
+                        <input type="text" class="form-control" id="tag-color-hex"
+                               value="#3498db" placeholder="#RRGGBB"
+                               oninput="document.getElementById('tag-color-picker').value = this.value">
+                    </div>
+                </div>
+                <button class="btn btn-primary w-100" onclick="saveTag()">Сохранить</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Управление шаблонами -->
+<div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0"><i class="bi bi-palette me-2"></i>Управление шаблонами</h5>
+        <button class="btn btn-primary btn-sm" onclick="showCreateTemplateModal()">
+            <i class="bi bi-plus-circle me-1"></i>Создать шаблон
+        </button>
+    </div>
+    <div class="card-body">
+        <div id="templates-container">
+            <div class="text-center py-3">
+                <div class="spinner-border text-primary" role="status"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модалка создания/редактирования шаблона -->
+<div class="modal fade" id="templateModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="template-modal-title">Создать шаблон</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="template-message" class="alert d-none"></div>
+                <input type="hidden" id="template-id">
+                <div class="mb-3">
+                    <label class="form-label">Название</label>
+                    <input type="text" class="form-control" id="template-name">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Описание</label>
+                    <textarea class="form-control" id="template-description" rows="3"></textarea>
+                </div>
+                <div class="mb-3">
+                    <div class="form-check">
+                        <input type="checkbox" class="form-check-input" id="template-premium">
+                        <label class="form-check-label">Премиум шаблон</label>
+                    </div>
+                </div>
+                <button class="btn btn-primary w-100" onclick="saveTemplate()">Сохранить</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Управление пользователями -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0"><i class="bi bi-people me-2"></i>Управление пользователями</h5>
+    </div>
+    <div class="card-body">
+        <div id="users-container">
+            <div class="text-center py-3">
+                <div class="spinner-border text-primary" role="status"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Управление альбомами -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0"><i class="bi bi-journal-album me-2"></i>Все альбомы</h5>
+    </div>
+    <div class="card-body">
+        <div id="all-albums-container">
+            <div class="text-center py-3">
+                <div class="spinner-border text-primary" role="status"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модалка редактирования пользователя -->
+<div class="modal fade" id="userModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Редактировать пользователя</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="user-message" class="alert d-none"></div>
+                <input type="hidden" id="edit-user-id">
+                <div class="mb-3">
+                    <label class="form-label">Имя пользователя</label>
+                    <input type="text" class="form-control" id="edit-username">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Роль</label>
+                    <select class="form-select" id="edit-user-role">
+                        <option value="user">Пользователь</option>
+                        <option value="admin">Администратор</option>
+                    </select>
+                </div>
+                <button class="btn btn-primary w-100" onclick="saveUser()">Сохранить</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        loadStats();
+        loadPendingReviews();
+        loadRecentAlbums();
+        loadTags();
+        loadUsers();
+        loadAllAlbums();
+        loadTemplates();
+    });
+
+    async function loadTags() {
+        const container = document.getElementById('tags-container');
+        try {
+            const res = await fetch(`${API_BASE}/tags/`, { credentials: 'include' });
+            const data = await res.json();
+            const tags = data.results || data;
+
+            if (tags.length === 0) {
+                container.innerHTML = '<p class="text-muted text-center py-3">Нет тегов</p>';
+                return;
+            }
+
+            let html = '<div class="d-flex flex-wrap gap-2">';
+            tags.forEach(tag => {
+                html += `
+                    <div class="d-flex align-items-center gap-1 border rounded px-2 py-1">
+                        <span class="badge" style="background-color: ${tag.color}">${tag.name}</span>
+                        <button class="btn btn-sm btn-link p-0 text-secondary" onclick="showEditTagModal(${tag.id}, '${tag.name}', '${tag.color}')">
+                            <i class="bi bi-pencil"></i>
+                        </button>
+                        <button class="btn btn-sm btn-link p-0 text-danger" onclick="deleteTag(${tag.id})">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </div>`;
+            });
+            html += '</div>';
+            container.innerHTML = html;
+
+        } catch (error) {
+            container.innerHTML = `<div class="alert alert-danger">Ошибка: ${error.message}</div>`;
+        }
+    }
+
+    function showCreateTagModal() {
+        document.getElementById('tag-id').value = '';
+        document.getElementById('tag-name').value = '';
+        document.getElementById('tag-color-hex').value = '#3498db';
+        document.getElementById('tag-color-picker').value = '#3498db';
+        document.getElementById('tag-modal-title').textContent = 'Создать тег';
+        document.getElementById('tag-message').classList.add('d-none');
+        new bootstrap.Modal(document.getElementById('tagModal')).show();
+    }
+
+    function showEditTagModal(id, name, color) {
+        document.getElementById('tag-id').value = id;
+        document.getElementById('tag-name').value = name;
+        document.getElementById('tag-color-hex').value = color;
+        document.getElementById('tag-color-picker').value = color;
+        document.getElementById('tag-modal-title').textContent = 'Редактировать тег';
+        document.getElementById('tag-message').classList.add('d-none');
+        new bootstrap.Modal(document.getElementById('tagModal')).show();
+    }
+
+    async function saveTag() {
+        const id = document.getElementById('tag-id').value;
+        const name = document.getElementById('tag-name').value.trim();
+        const color = document.getElementById('tag-color-hex').value.trim();
+        const messageEl = document.getElementById('tag-message');
+
+        const method = id ? 'PUT' : 'POST';
+        const url = id ? `${API_BASE}/tags/${id}/` : `${API_BASE}/tags/`;
+
+        try {
+            const res = await fetch(url, {
+                method,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                credentials: 'include',
+                body: JSON.stringify({ name, color })
+            });
+
+            if (!res.ok) {
+                const err = await res.json();
+                throw new Error(err.color?.[0] || err.name?.[0] || 'Ошибка сохранения');
+            }
+
+            bootstrap.Modal.getInstance(document.getElementById('tagModal')).hide();
+            loadTags();
+
+        } catch (error) {
+            messageEl.className = 'alert alert-danger';
+            messageEl.textContent = error.message;
+            messageEl.classList.remove('d-none');
+        }
+    }
+
+    async function deleteTag(id) {
+        if (!confirm('Удалить тег?')) return;
+        try {
+            const res = await fetch(`${API_BASE}/tags/${id}/`, {
+                method: 'DELETE',
+                headers: { 'X-CSRFToken': getCookie('csrftoken') },
+                credentials: 'include'
+            });
+            if (!res.ok) throw new Error('Ошибка удаления');
+            loadTags();
+        } catch (error) {
+            alert('Ошибка: ' + error.message);
+        }
+    }
+
+    async function loadStats() {
+        try {
+            const [albumsRes, photosRes, reviewsRes, usersRes] = await Promise.all([
+            fetch(`${API_BASE}/albums/?page_size=1`, { credentials: 'include' }),
+            fetch(`${API_BASE}/photos/?page_size=1`, { credentials: 'include' }),
+            fetch(`${API_BASE}/reviews/`, { credentials: 'include' }),
+            fetch(`${API_BASE}/users/?page_size=1`, { credentials: 'include' }),
+        ]);
+
+        const albumsData = await albumsRes.json();
+        const photosData = await photosRes.json();
+        const reviewsData = await reviewsRes.json();
+        const usersData = await usersRes.json();
+
+        document.getElementById('stat-albums').textContent = albumsData.count || 0;
+        document.getElementById('stat-photos').textContent = photosData.count || 0;
+        document.getElementById('stat-users').textContent = usersData.count || 0;
+
+        const pendingCount = (reviewsData.results || []).filter(r => !r.is_published).length;
+        document.getElementById('stat-reviews').textContent = pendingCount;
+        } catch (error) {
+            console.error('Ошибка загрузки статистики:', error);
+        }
+    }
+
+    async function loadPendingReviews() {
+        const container = document.getElementById('reviews-container');
+        try {
+            const res = await fetch(`${API_BASE}/reviews/`, { credentials: 'include' });
+            const data = await res.json();
+            const pending = (data.results || []).filter(r => !r.is_published);
+
+            if (pending.length === 0) {
+                container.innerHTML = '<p class="text-muted text-center py-3">Нет отзывов на модерации</p>';
+                return;
+            }
+
+            let html = '<div class="table-responsive"><table class="table table-hover">';
+            html += '<thead><tr><th>Пользователь</th><th>Email</th><th>Оценка</th><th>Текст</th><th>Действие</th></tr></thead><tbody>';
+
+            pending.forEach(review => {
+                const stars = '★'.repeat(review.rating) + '☆'.repeat(5 - review.rating);
+                html += `
+                    <tr>
+                        <td>${review.user.username}</td>
+                        <td>${review.email}</td>
+                        <td class="text-warning">${stars}</td>
+                        <td>${review.text.substring(0, 80)}${review.text.length > 80 ? '...' : ''}</td>
+                        <td>
+                            <button class="btn btn-sm btn-success me-1" onclick="publishReview(${review.id})">
+                                <i class="bi bi-check"></i> Опубликовать
+                            </button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteReview(${review.id})">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </td>
+                    </tr>`;
+            });
+
+            html += '</tbody></table></div>';
+            container.innerHTML = html;
+
+        } catch (error) {
+            container.innerHTML = `<div class="alert alert-danger">Ошибка: ${error.message}</div>`;
+        }
+    }
+
+    async function loadUsers() {
+    const container = document.getElementById('users-container');
+    try {
+        const res = await fetch(`${API_BASE}/users/`, { credentials: 'include' });
+        const data = await res.json();
+        const users = data.results || [];
+
+        if (users.length === 0) {
+            container.innerHTML = '<p class="text-muted text-center py-3">Нет пользователей</p>';
+            return;
+        }
+
+        let html = '<div class="table-responsive"><table class="table table-hover">';
+        html += '<thead><tr><th>Имя</th><th>Email</th><th>Роль</th><th>Действия</th></tr></thead><tbody>';
+
+        users.forEach(user => {
+            html += `
+                <tr>
+                    <td>${user.username}</td>
+                    <td>${user.email || '—'}</td>
+                    <td>
+                        <span class="badge ${user.role === 'admin' ? 'bg-danger' : 'bg-secondary'}">
+                            ${user.role === 'admin' ? 'Админ' : 'Пользователь'}
+                        </span>
+                    </td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary me-1"
+                                onclick="showEditUserModal(${user.id}, '${user.username}', '${user.role}')">
+                            <i class="bi bi-pencil"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger"
+                                onclick="deleteUser(${user.id})">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </td>
+                </tr>`;
+        });
+
+        html += '</tbody></table></div>';
+        container.innerHTML = html;
+
+    } catch (error) {
+        container.innerHTML = `<div class="alert alert-danger">Ошибка: ${error.message}</div>`;
+    }
+}
+
+    function showEditUserModal(id, username, role) {
+        document.getElementById('edit-user-id').value = id;
+        document.getElementById('edit-username').value = username;
+        document.getElementById('edit-user-role').value = role;
+        document.getElementById('user-message').classList.add('d-none');
+        new bootstrap.Modal(document.getElementById('userModal')).show();
+    }
+
+    async function saveUser() {
+        const id = document.getElementById('edit-user-id').value;
+        const username = document.getElementById('edit-username').value.trim();
+        const role = document.getElementById('edit-user-role').value;
+        const messageEl = document.getElementById('user-message');
+
+        try {
+            const res = await fetch(`${API_BASE}/users/${id}/`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                credentials: 'include',
+                body: JSON.stringify({ username, role })
+            });
+
+            if (!res.ok) {
+                const err = await res.json();
+                throw new Error(err.username?.[0] || 'Ошибка сохранения');
+            }
+
+            bootstrap.Modal.getInstance(document.getElementById('userModal')).hide();
+            loadUsers();
+            loadStats();
+
+        } catch (error) {
+            messageEl.className = 'alert alert-danger';
+            messageEl.textContent = error.message;
+            messageEl.classList.remove('d-none');
+        }
+    }
+
+    async function deleteUser(id) {
+        if (!confirm('Удалить пользователя и все его данные?')) return;
+        try {
+            const res = await fetch(`${API_BASE}/users/${id}/`, {
+                method: 'DELETE',
+                headers: { 'X-CSRFToken': getCookie('csrftoken') },
+                credentials: 'include'
+            });
+            if (!res.ok) {
+                const err = await res.json();
+                throw new Error(err.error || 'Ошибка удаления');
+            }
+            loadUsers();
+            loadStats();
+        } catch (error) {
+            alert('Ошибка: ' + error.message);
+        }
+    }
+
+    async function loadAllAlbums() {
+        const container = document.getElementById('all-albums-container');
+        try {
+            const res = await fetch(`${API_BASE}/albums/?page_size=20&ordering=-created_at`, { credentials: 'include' });
+            const data = await res.json();
+            const albums = data.results || [];
+
+            if (albums.length === 0) {
+                container.innerHTML = '<p class="text-muted text-center py-3">Нет альбомов</p>';
+                return;
+            }
+
+            let html = '<div class="table-responsive"><table class="table table-hover">';
+            html += '<thead><tr><th>Название</th><th>Владелец</th><th>Фото</th><th>Создан</th><th>Действия</th></tr></thead><tbody>';
+
+            albums.forEach(album => {
+                html += `
+                    <tr>
+                        <td>${album.title}</td>
+                        <td>${album.user.username}</td>
+                        <td>${album.photo_count}</td>
+                        <td>${new Date(album.created_at).toLocaleDateString('ru-RU')}</td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary me-1"
+                                    onclick="window.location.href='/albums/${album.id}/'">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger"
+                                    onclick="deleteAlbumAdmin(${album.id})">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </td>
+                    </tr>`;
+            });
+
+            html += '</tbody></table></div>';
+            container.innerHTML = html;
+
+        } catch (error) {
+            container.innerHTML = `<div class="alert alert-danger">Ошибка: ${error.message}</div>`;
+        }
+    }
+
+    async function deleteAlbumAdmin(id) {
+        if (!confirm('Удалить альбом и все фото в нём?')) return;
+        try {
+            const res = await fetch(`${API_BASE}/albums/${id}/`, {
+                method: 'DELETE',
+                headers: { 'X-CSRFToken': getCookie('csrftoken') },
+                credentials: 'include'
+            });
+            if (!res.ok) throw new Error('Ошибка удаления');
+            loadAllAlbums();
+            loadStats();
+        } catch (error) {
+            alert('Ошибка: ' + error.message);
+        }
+    }
+
+    async function loadRecentAlbums() {
+        const container = document.getElementById('albums-container');
+        try {
+            const res = await fetch(`${API_BASE}/albums/?page_size=5&ordering=-created_at`, { credentials: 'include' });
+            const data = await res.json();
+            const albums = data.results || [];
+
+            if (albums.length === 0) {
+                container.innerHTML = '<p class="text-muted text-center py-3">Нет альбомов</p>';
+                return;
+            }
+
+            let html = '<div class="table-responsive"><table class="table table-hover">';
+            html += '<thead><tr><th>Название</th><th>Владелец</th><th>Фото</th><th>Создан</th></tr></thead><tbody>';
+
+            albums.forEach(album => {
+                html += `
+                    <tr>
+                        <td>${album.title}</td>
+                        <td>${album.user.username}</td>
+                        <td>${album.photo_count}</td>
+                        <td>${new Date(album.created_at).toLocaleDateString('ru-RU')}</td>
+                    </tr>`;
+            });
+
+            html += '</tbody></table></div>';
+            container.innerHTML = html;
+
+        } catch (error) {
+            container.innerHTML = `<div class="alert alert-danger">Ошибка: ${error.message}</div>`;
+        }
+    }
+
+    async function publishReview(reviewId) {
+        try {
+            const res = await fetch(`${API_BASE}/reviews/${reviewId}/publish/`, {
+                method: 'POST',
+                headers: { 'X-CSRFToken': getCookie('csrftoken') },
+                credentials: 'include'
+            });
+            if (!res.ok) throw new Error('Ошибка публикации');
+            loadPendingReviews();
+            loadStats();
+        } catch (error) {
+            alert('Ошибка: ' + error.message);
+        }
+    }
+
+    async function deleteReview(reviewId) {
+        if (!confirm('Удалить отзыв?')) return;
+        try {
+            const res = await fetch(`${API_BASE}/reviews/${reviewId}/`, {
+                method: 'DELETE',
+                headers: { 'X-CSRFToken': getCookie('csrftoken') },
+                credentials: 'include'
+            });
+            if (!res.ok) throw new Error('Ошибка удаления');
+            loadPendingReviews();
+            loadStats();
+        } catch (error) {
+            alert('Ошибка: ' + error.message);
+        }
+    }
+
+    async function loadTemplates() {
+        const container = document.getElementById('templates-container');
+        try {
+            const res = await fetch(`${API_BASE}/templates/`, { credentials: 'include' });
+            const data = await res.json();
+            const templates = data.results || data;
+
+            if (templates.length === 0) {
+                container.innerHTML = '<p class="text-muted text-center py-3">Нет шаблонов</p>';
+                return;
+            }
+
+            let html = '<div class="table-responsive"><table class="table table-hover">';
+            html += '<thead><tr><th>Название</th><th>Описание</th><th>Премиум</th><th>Действия</th></tr></thead><tbody>';
+
+            templates.forEach(t => {
+                html += `
+                    <tr>
+                        <td>${t.name}</td>
+                        <td>${t.description || '—'}</td>
+                        <td>
+                            <span class="badge ${t.is_premium ? 'bg-warning text-dark' : 'bg-secondary'}">
+                                ${t.is_premium ? 'Премиум' : 'Обычный'}
+                            </span>
+                        </td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary me-1"
+                                    onclick="showEditTemplateModal(${t.id}, '${t.name}', '${t.description || ''}', ${t.is_premium})">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger"
+                                    onclick="deleteTemplate(${t.id})">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </td>
+                    </tr>`;
+            });
+
+            html += '</tbody></table></div>';
+            container.innerHTML = html;
+
+        } catch (error) {
+            container.innerHTML = `<div class="alert alert-danger">Ошибка: ${error.message}</div>`;
+        }
+    }
+
+    function showCreateTemplateModal() {
+        document.getElementById('template-id').value = '';
+        document.getElementById('template-name').value = '';
+        document.getElementById('template-description').value = '';
+        document.getElementById('template-premium').checked = false;
+        document.getElementById('template-modal-title').textContent = 'Создать шаблон';
+        document.getElementById('template-message').classList.add('d-none');
+        new bootstrap.Modal(document.getElementById('templateModal')).show();
+    }
+
+    function showEditTemplateModal(id, name, description, isPremium) {
+        document.getElementById('template-id').value = id;
+        document.getElementById('template-name').value = name;
+        document.getElementById('template-description').value = description;
+        document.getElementById('template-premium').checked = isPremium;
+        document.getElementById('template-modal-title').textContent = 'Редактировать шаблон';
+        document.getElementById('template-message').classList.add('d-none');
+        new bootstrap.Modal(document.getElementById('templateModal')).show();
+    }
+
+    async function saveTemplate() {
+        const id = document.getElementById('template-id').value;
+        const name = document.getElementById('template-name').value.trim();
+        const description = document.getElementById('template-description').value.trim();
+        const is_premium = document.getElementById('template-premium').checked;
+        const messageEl = document.getElementById('template-message');
+
+        const method = id ? 'PUT' : 'POST';
+        const url = id ? `${API_BASE}/templates/${id}/` : `${API_BASE}/templates/`;
+
+        try {
+            const res = await fetch(url, {
+                method,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                credentials: 'include',
+                body: JSON.stringify({ name, description, is_premium })
+            });
+
+            if (!res.ok) {
+                const err = await res.json();
+                throw new Error(err.name?.[0] || 'Ошибка сохранения');
+            }
+
+            bootstrap.Modal.getInstance(document.getElementById('templateModal')).hide();
+            loadTemplates();
+
+        } catch (error) {
+            messageEl.className = 'alert alert-danger';
+            messageEl.textContent = error.message;
+            messageEl.classList.remove('d-none');
+        }
+    }
+
+    async function deleteTemplate(id) {
+        if (!confirm('Удалить шаблон?')) return;
+        try {
+            const res = await fetch(`${API_BASE}/templates/${id}/`, {
+                method: 'DELETE',
+                headers: { 'X-CSRFToken': getCookie('csrftoken') },
+                credentials: 'include'
+            });
+            if (!res.ok) throw new Error('Ошибка удаления');
+            loadTemplates();
+        } catch (error) {
+            alert('Ошибка: ' + error.message);
+        }
+    }
+</script>
+{% endblock %}

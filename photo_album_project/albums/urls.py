@@ -9,6 +9,7 @@ router.register(r'photos', views.PhotoViewSet, basename='photo')
 router.register(r'albums', views.AlbumViewSet, basename='album')
 router.register(r'album-photos', views.AlbumPhotoViewSet)
 router.register(r'reviews', views.ReviewViewSet, basename='review')
+router.register(r'users', views.UserViewSet, basename='user')
 
 urlpatterns = [
     path('', include(router.urls)),
