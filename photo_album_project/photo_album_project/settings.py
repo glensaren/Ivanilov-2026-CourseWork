@@ -145,11 +145,13 @@ REST_FRAMEWORK = {
     ],
 }
 
-LOGGING = {
-    'version': 1,
-    'handlers': {'console': {'class': 'logging.StreamHandler'}},
-    'root': {'handlers': ['console'], 'level': 'DEBUG'},
-    'loggers': {
-        'django.db.backends': {'level': 'DEBUG', 'handlers': ['console']},
-    },
-}
+# LOGGING = {
+#     'version': 1,
+#     'handlers': {'console': {'class': 'logging.StreamHandler'}},
+#     'root': {'handlers': ['console'], 'level': 'DEBUG'},
+#     'loggers': {
+#         'django.db.backends': {'level': 'DEBUG', 'handlers': ['console']},
+#     },
+# }
+
+AUTH_USER_MODEL = 'albums.User'

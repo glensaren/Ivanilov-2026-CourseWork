@@ -2,6 +2,19 @@ from django.db import models
 from django.contrib.auth.models import User
 from simple_history.models import HistoricalRecords
 
+from django.contrib.auth.models import AbstractUser
+
+class User(AbstractUser):
+    ROLE_CHOICES = [
+        ('user', 'Пользователь'),
+        ('admin', 'Администратор'),
+    ]
+    role = models.CharField(max_length=10, choices=ROLE_CHOICES, default='user')
+
+    class Meta:
+        verbose_name = 'Пользователь'
+        verbose_name_plural = 'Пользователи'
+
 class Tag(models.Model):
     name = models.CharField(max_length=50, unique=True)
     color = models.CharField(max_length=7, default='#3498db')
@@ -78,3 +91,19 @@ class AlbumPhoto(models.Model):
     class Meta:
         verbose_name = "Фотография в альбоме"
         verbose_name_plural = "Фотографии в альбомах"
+
+class Review(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='reviews')
+    email = models.EmailField()
+    text = models.TextField()
+    rating = models.PositiveSmallIntegerField()
+    is_published = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    history = HistoricalRecords()
+
+    def __str__(self):
+        return f'Отзыв от {self.user.username} — {self.rating}★'
+
+    class Meta:
+        verbose_name = 'Отзыв'
+        verbose_name_plural = 'Отзывы'
