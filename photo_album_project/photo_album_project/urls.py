@@ -5,6 +5,7 @@ from django.conf.urls.static import static
 from albums import views
 
 urlpatterns = [
+    path('accounts/', include('allauth.urls')),
     path('silk/', include('silk.urls', namespace='silk')),
     path('', views.home_page, name='home'),
     path('admin/', admin.site.urls),
