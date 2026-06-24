@@ -2,7 +2,8 @@ from celery import shared_task
 from django.core.mail import send_mail
 from django.utils import timezone
 from datetime import timedelta
-
+from .models import Album, Photo, Review
+from django.contrib.auth import get_user_model
 
 @shared_task
 def send_daily_stats() -> None:
@@ -10,8 +11,7 @@ def send_daily_stats() -> None:
     Периодическая задача: отправляет администратору ежедневную статистику.
     Запускается каждый день в 9:00 по московскому времени.
     """
-    from .models import Album, Photo, Review
-    from django.contrib.auth import get_user_model
+
     User = get_user_model()
 
     today = timezone.now().date()
