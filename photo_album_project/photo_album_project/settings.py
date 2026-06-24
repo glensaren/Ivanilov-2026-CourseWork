@@ -20,9 +20,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 
 # Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
+# See https://docs.djangoproject.com/en/6.0/how
 
-# SECURITY WARNING: keep the secret key used in production secret!
+
+
 SECRET_KEY = 'django-insecure-3(y+q+p0xtn5kx9&5bsli71cvj4@im^(3)e-=-dis64z@f7yq)'
 
 # SECURITY WARNING: don't run with debug turned on in production!
@@ -46,6 +47,7 @@ INSTALLED_APPS = [
     'simple_history',
     'django_filters',
     'silk',
+    'django_celery_beat',
 ]
 
 MIDDLEWARE = [
@@ -61,7 +63,7 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = 'photo_album_project.urls'
 
-DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'а
 
 TEMPLATES = [
     {
@@ -173,3 +175,34 @@ sentry_sdk.init(
     send_default_pii=True,
     traces_sample_rate=1.0,
 )
+
+
+CELERY_BROKER_URL = 'redis://localhost:6379/0'
+CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
+CELERY_TIMEZONE = 'Europe/Moscow'
+CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
+CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
+CELERY_REDIS_BACKEND_USE_SSL = False
+
+# Продакшен настройки — читаются из переменных окружения если заданы
+if os.environ.get('DJANGO_PRODUCTION'):
+    SECRET_KEY = os.environ.get('SECRET_KEY', SECRET_KEY)
+    DEBUG = False
+    ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost').split(',')
+    
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': os.environ.get('DB_NAME', 'photo_album_db'),
+            'USER': os.environ.get('DB_USER', 'postgres'),
+            'PASSWORD': os.environ.get('DB_PASSWORD', ''),
+            'HOST': os.environ.get('DB_HOST', 'db'),
+            'PORT': os.environ.get('DB_PORT', '5432'),
+        }
+    }
+    
+    EMAIL_HOST = os.environ.get('EMAIL_HOST', 'mailhog')
+    EMAIL_PORT = int(os.environ.get('EMAIL_PORT', 1025))
+    
+    CELERY_BROKER_URL = os.environ.get('CELERY_BROKER_URL', 'redis://redis:6379/0')
+    CELERY_RESULT_BACKEND = os.environ.get('CELERY_RESULT_BACKEND', 'redis://redis:6379/0')

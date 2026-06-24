@@ -378,6 +378,11 @@
             document.querySelectorAll('.star-btn').forEach(s => {
                 s.className = 'bi bi-star star-btn';
             });
+
+            setTimeout(() => {
+                bootstrap.Modal.getInstance(document.getElementById('reviewModal')).hide();
+            }, 750);
+            
         } else {
             const data = await response.json();
             let errorText = 'Ошибка отправки отзыва.';

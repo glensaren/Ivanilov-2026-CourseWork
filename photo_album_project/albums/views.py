@@ -9,7 +9,6 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse, HttpRequest, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
-from django.shortcuts import render
 import json
 
 from django.db.models import Q, Count, QuerySet
@@ -142,6 +141,11 @@ class AlbumViewSet(viewsets.ModelViewSet):
     search_fields = ['title', 'description']
     ordering_fields = ['created_at', 'photo_count']
 
+
+
+    # ОПТИМИЗИРОВАННАЯ ВЕРСИЯ (ИТОГОВАЯ)
+
+
     def get_queryset(self) -> QuerySet:
         """
         Возвращает QuerySet альбомов с аннотацией photo_count и оптимизированными запросами.
@@ -153,21 +157,13 @@ class AlbumViewSet(viewsets.ModelViewSet):
             photo_count=Count('albumphoto')
         ).select_related('user', 'template').prefetch_related(
             'albumphoto_set__photo',
+            'albumphoto_set__photo__user',
             'albumphoto_set__photo__tags'
         )
         user_filter = self.request.query_params.get('user')
-        if user_filter:
+        if user_filter: 
             queryset = queryset.filter(user__username=user_filter)
         return queryset
-
-    def perform_create(self, serializer) -> None:
-        """
-        Сохраняет альбом с привязкой к текущему пользователю.
-
-        Args:
-            serializer: валидированный сериализатор альбома
-        """
-        serializer.save(user=self.request.user)
 
     @action(detail=False, methods=['get'], permission_classes=[permissions.IsAuthenticated])
     def my(self, request: Request) -> Response:
@@ -182,9 +178,63 @@ class AlbumViewSet(viewsets.ModelViewSet):
         """
         albums = Album.objects.annotate(
             photo_count=Count('albumphoto')
-        ).select_related('user', 'template').filter(user=request.user)
+        ).select_related('user', 'template').prefetch_related(
+            'albumphoto_set__photo',
+            'albumphoto_set__photo__user',
+            'albumphoto_set__photo__tags'
+        ).filter(user=request.user)
         serializer = self.get_serializer(albums, many=True)
         return Response(serializer.data)
+
+
+
+    # НЕ-ОПТИМИЗИРОВАННАЯ ВЕРСИЯ (БЕЗ select_related и prefetch_related)
+
+    # def get_queryset(self) -> QuerySet:
+    #     """
+    #     Возвращает QuerySet альбомов с аннотацией photo_count БЕЗ оптимизации запросов.
+    #     (версия для демонстрации N+1 проблемы)
+
+    #     Returns:
+    #         QuerySet альбомов
+    #     """
+    #     queryset = Album.objects.annotate(
+    #         photo_count=Count('albumphoto')
+    #     )
+    #     user_filter = self.request.query_params.get('user')
+    #     if user_filter:
+    #         queryset = queryset.filter(user__username=user_filter)
+    #     return queryset
+
+    # @action(detail=False, methods=['get'], permission_classes=[permissions.IsAuthenticated])
+    # def my(self, request: Request) -> Response:
+    #     """
+    #     Возвращает список альбомов текущего пользователя БЕЗ оптимизации запросов.
+    #     (версия для демонстрации N+1 проблемы)
+
+    #     Args:
+    #         request: объект запроса
+
+    #     Returns:
+    #         Список альбомов пользователя
+    #     """
+    #     albums = Album.objects.annotate(
+    #         photo_count=Count('albumphoto')
+    #     ).filter(user=request.user)
+    #     serializer = self.get_serializer(albums, many=True)
+    #     return Response(serializer.data)
+
+
+
+
+    def perform_create(self, serializer) -> None:
+        """
+        Сохраняет альбом с привязкой к текущему пользователю.
+
+        Args:
+            serializer: валидированный сериализатор альбома
+        """
+        serializer.save(user=self.request.user)
 
     @action(detail=True, methods=['post'], permission_classes=[permissions.IsAuthenticated])
     def add_photo(self, request: Request, pk: int = None) -> Response:
